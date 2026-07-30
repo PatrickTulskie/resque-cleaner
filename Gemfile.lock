@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    resque-cleaner (0.4.1)
+    resque-cleaner (0.5.0)
       resque
 
 GEM
@@ -41,6 +41,7 @@ GEM
     timecop (0.9.6)
 
 PLATFORMS
+  aarch64-linux
   x86_64-linux
 
 DEPENDENCIES

@@ -1,3 +1,18 @@
+## Unreleased
+
+* Fix data corruption when retrying ActiveJob failures without clearing them. Stored
+  payloads now retain `ActiveJob::QueueAdapters::ResqueAdapter::JobWrapper` and its
+  serialized arguments while the UI still displays and filters by the inner job class.
+* Preserve the wrapper when enqueueing ActiveJob retries, including repeated retries.
+
+ActiveJob failure records already corrupted by an earlier retry cannot be recovered by
+this gem. Check the failed list for records whose `payload.class` is an ActiveJob class
+rather than `ActiveJob::QueueAdapters::ResqueAdapter::JobWrapper`.
+
+`cleaner.select` and `/cleaner_dump` now return the original ActiveJob wrapper payload
+instead of a flattened inner class and arguments. Code consuming those results should
+read the raw wrapper shape.
+
 ## 0.4.1 (2018-01-25)
 
 * Remove Requeue version lock (#46)
