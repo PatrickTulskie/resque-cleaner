@@ -109,6 +109,32 @@ describe "resque-web" do
     assert_includes last_response.body, "ActiveJob::QueueAdapters::ResqueAdapter::JobWrapper"
   end
 
+  it "escapes persisted failure values" do
+    data = activejob_failure_data
+    data[:payload][:args][0][:job_class] = %q{"><script>alert(1)</script>}
+    data[:exception] = %q{"><script>alert(2)</script>}
+    data[:worker] = %q{worker"><script>alert(3)</script>:123:queue}
+    data[:queue] = %q{"><script>alert(4)</script>}
+    data[:retried_at] = %q{"><script>alert(5)</script>}
+    Resque.redis.rpush(:failed, Resque.encode(data))
+
+    get "/cleaner"
+    assert_includes last_response.body, '&quot;&gt;&lt;script&gt;alert(1)&lt;&#x2F;script&gt;'
+    assert_includes last_response.body, '&quot;&gt;&lt;script&gt;alert(2)&lt;&#x2F;script&gt;'
+    refute_includes last_response.body, '<script>alert(1)</script>'
+    refute_includes last_response.body, '<script>alert(2)</script>'
+
+    get "/cleaner_list"
+    assert_includes last_response.body, '&quot;&gt;&lt;script&gt;alert(1)&lt;&#x2F;script&gt;'
+    assert_includes last_response.body, '&quot;&gt;&lt;script&gt;alert(2)&lt;&#x2F;script&gt;'
+    assert_includes last_response.body, 'worker&quot;&gt;&lt;script&gt;alert(3)&lt;&#x2F;script&gt;:123'
+    assert_includes last_response.body, '&quot;&gt;&lt;script&gt;alert(4)&lt;&#x2F;script&gt;'
+    assert_includes last_response.body, '&quot;&gt;&lt;script&gt;alert(5)&lt;&#x2F;script&gt;'
+    (1..5).each do |number|
+      refute_includes last_response.body, "<script>alert(#{number})</script>"
+    end
+  end
+
   it '#cleaner_exec clears job' do
     post "/cleaner_exec", :action => "clear", :sha1 => Digest::SHA1.hexdigest(@cleaner.select[0].to_json)
     assert_equal 10, @cleaner.select.size
