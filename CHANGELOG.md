@@ -1,9 +1,17 @@
-## Unreleased
+## 0.5.1 (2026-07-30)
 
 * Fix data corruption when retrying ActiveJob failures without clearing them. Stored
   payloads now retain `ActiveJob::QueueAdapters::ResqueAdapter::JobWrapper` and its
   serialized arguments while the UI still displays and filters by the inner job class.
 * Preserve the wrapper when enqueueing ActiveJob retries, including repeated retries.
+* Remove failed-list entries by list index, replacing the selected entry with a unique
+  sentinel inside a Redis transaction. Byte-identical failure records can no longer
+  cause the wrong entry to be removed. Replaces a `redis.multi` block that never used
+  the transaction object and so was not atomic.
+* Escape persisted failure metadata rendered in the Cleaner web UI: job class,
+  exception, worker, queue, and `retried_at`.
+* Require `digest/sha1` and `json` when the server extension loads rather than on every
+  Cleaner route, and drop the obsolete `yajl/json_gem` fallback.
 
 ActiveJob failure records already corrupted by an earlier retry cannot be recovered by
 this gem. Check the failed list for records whose `payload.class` is an ActiveJob class
@@ -12,6 +20,15 @@ rather than `ActiveJob::QueueAdapters::ResqueAdapter::JobWrapper`.
 `cleaner.select` and `/cleaner_dump` now return the original ActiveJob wrapper payload
 instead of a flattened inner class and arguments. Code consuming those results should
 read the raw wrapper shape.
+
+## 0.5.0 (2023-04-20)
+
+* Ruby 3+ support, including a fix for rendering the Cleaner page.
+* Display ActiveJob failures using the inner job class rather than the queue adapter
+  wrapper.
+* Escape job arguments rendered in the web UI.
+* Fix redis-namespace deprecation warnings.
+* Add a Docker-based test environment.
 
 ## 0.4.1 (2018-01-25)
 
